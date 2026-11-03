@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>My Ubuntu Server</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <main class="page-wrap">
+
+        <section class="highlights">
+            <div class="highlight">
+                <span class="highlight-label">OPERATING SYSTEM</span>
+                <strong>Ubuntu 26.04 LTS</strong>
+            </div>
+
+            <div class="highlight">
+                <span class="highlight-label">WEB SERVER</span>
+                <strong>Nginx</strong>
+            </div>
+
+            <div class="highlight">
+                <span class="highlight-label">PROTOCOL</span>
+                <strong>HTTP Port 80</strong>
+            </div>
+        </section>
+
+        <section class="questions-section">
+            <p class="section-kicker">THE ASSIGNMENT</p>
+            <h2>Questions &amp; answers</h2>
+
+            <div class="qa">
+                <h3>1. Linux distribution and version</h3>
+                <p>
+                    I'm using Ubuntu 26.04.1 LTS.
+                    This can be verified using 
+		<pre class="command"><code>cat /etc/os-release</code></pre>
+                </p>
+            </div>
+
+            <div class="qa">
+                <h3>2. What is Nginx, and what does it do in this server?</h3>
+                <p>
+			Nginx is a web server software that receives HTTP requests
+			and sends responses back to them.
+		</p>
+		<p>
+			It's designed to efficiently handle many simultaneous connections.
+		</p>
+		<p>
+			Nginx can also serve as reverse proxy, load balancer and for
+			caching and HTTPS encryption.
+		</p>
+		<p>
+			On this server, Nginx listens for incoming requests on
+			port 80 and serves the requested HTML and CSS files from /var/www/school-site/.
+                </p>
+            </div>
+
+	    <div class="qa">
+                <h3>3. Which commands did I use?</h3>
+                <p>	
+			To start. I refreshed the package lists with
+		</p>
+			<pre class="command"><code>sudo apt update</code></pre>
+		<p>
+			Then I updated the updatable packages with
+		</p>
+			<pre class="command"><code>sudo apt upgrade</code></pre>
+		<p>
+			Next I installed engine x with
+		</p>
+			<pre class="command"><code>sudo apt install nginx</code></pre>
+		<p>
+			And after that I checked if it was enabled to start up with
+		</p>
+			<pre class="command"><code>systemctl is-enabled nginx</code></pre>
+		<p>
+			If it would have not been enabled I would have enabled it with
+		</p>
+			<pre class="command"><code>sudo systemctl enable nginx</code></pre>
+		
+		<p>
+			Enabling is basically is enabled at startup. So if server reboots, the nginx is restarted
+		</p>
+		<p>
+			Next part is completely optional btw and doesn't affect the nginx working on any way.
+			It's just some customisability on how the terminal looks.
+		</p>	
+
+		<p>
+			Next I needed to change how the command line looks on the server, so I installed
+			command line shell and Oh My Szh. Oh My Zsh is a framework that provides themes,
+			plugins and configuration to Zsh. I also wanted autosuggestions so I got it as well
+			Next are the commands to get both.
+		</p>
+			<pre class="command"><code>sudo apt install zsh git curl</code></pre>
+			<pre class="command"><code>sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"</code></pre>
+			<pre class="command"><code>git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions </code></pre>
+		
+		<p>
+			Then the zsh configurations have to be modified with i.e. nano. the config file is in ~/.zshrc
+			there you have to add autosuggestions along the git in to plugins=(git) like this plugins=(git zsh-autosuggestions)
+			Next you can save and reload with
+		</p>
+			<pre class="command"><code>source ~/.zshrc</code></pre>
+		<p>
+			If all is succesful, you should have autosuggestions to commands you have already done once.
+			Then you can change your default shell with
+		</p>
+			<pre class=</p>"command"><code>sudo chsh -s "$(command -v zsh)" "$USER"</code></pre>
+	    </div>
+        </section>
+
+    </main>
+</body>
+</html>
