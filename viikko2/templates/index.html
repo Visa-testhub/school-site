@@ -9,7 +9,13 @@
 </head>
 <body>
     <h1>Python-verkkosovellus</h1>
-    <p>Flask toimii!</p>
-    <p>Ääkköset toimivat myös: ä ö å ÄÖÅ</p>
+    <p>Flask ja MySQL toimivat yhdessä!</p>
+    <h2>Kävijälaskuri</h2>
+    <p>Sivun latauskerrat: <strong>{{ visits }}</strong></p>
+    <p>
+        Laskurin arvo tallennetaan MySQL 8.4 -tietokantaan.
+        Flask-sovellus lukee ja kirjoittaa laskurin arvon tietokannasta.
+    </p>
+
 </body>
 </html>
