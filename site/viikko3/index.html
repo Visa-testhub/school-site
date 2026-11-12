@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Server Status Report</title>
+
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="./status.css">
+</head>
+
+<body>
+    <main class="page-wrap">
+
+        <header class="report-header">
+            <p class="section-kicker">WEEK 3 / SERVER MONITORING</p>
+            <h1>Server Status Report</h1>
+        </header>
+
+        <section class="status-grid">
+
+            <div class="status-card">
+                <span class="highlight-label">REPORT GENERATED</span>
+                <strong id="generated">Loading...</strong>
+            </div>
+
+            <div class="status-card">
+                <span class="highlight-label">UPTIME</span>
+                <strong id="uptime">Loading...</strong>
+            </div>
+
+            <div class="status-card">
+                <span class="highlight-label">DISK USAGE</span>
+                <strong id="disk">Loading...</strong>
+            </div>
+
+            <div class="status-card">
+                <span class="highlight-label">DISK STATUS</span>
+                <strong id="status">Loading...</strong>
+            </div>
+
+            <div class="status-card">
+                <span class="highlight-label">TOTAL RAM</span>
+                <strong id="mem_total">Loading...</strong>
+            </div>
+
+            <div class="status-card">
+                <span class="highlight-label">AVAILABLE RAM</span>
+                <strong id="mem_available">Loading...</strong>
+            </div>
+
+        </section>
+
+
+        <section class="questions-section">
+            <p class="section-kicker">THE ASSIGNMENT</p>
+            <h2>Implementation & Testing</h2>
+
+            <div class="qa">
+                <h3>1. Commands used</h3>
+
+                <p>
+                    Date command displays the current date,
+                    time and time zone.
+                </p>
+                <pre class="command"><code>date '+%Y-%m-%d %H:%M:%S %Z %z'</code></pre>
+
+                <p>
+                    df command displays disk usage for the root (/).
+                    Its output is piped to awk, which extracts the usage
+                    percentage from the second row and fifth column.
+                </p>
+                <pre class="command"><code>df -P / | awk 'NR==2 {print $5}'</code></pre>
+
+                <p>
+                    The free command displays system memory information.
+                    The -m option shows memory values in MiB.
+                    The script uses these values to determine
+                    total and available RAM.
+                </p>
+                <pre class="command"><code>free -m</code></pre>
+            </div>
+
+            <div class="qa">
+                <h3>2. How the script works</h3>
+
+                <p>
+                    A Bash script collects system information using
+                    different linux commands like date, uptime and df.
+                    Command substitution ($(...)) stores the results
+                    in Bash variables.
+                </p>
+
+                <p>
+                    The script then generates a JSON file containing
+                    the collected information. JavaScript on this
+                    webpage fetches the JSON file and displays
+                    the values.
+                </p>
+
+                <p>
+                    Disk space status is determined using a function
+                    containing an if statement. When disk usage is
+                    below 80%, the status is OK. At 80% or above,
+                    the status changes to WARNING.
+                </p>
+            </div>
+
+            <div class="qa">
+                <h3>3. Automatic scheduling</h3>
+
+                <p>
+                    Cron is used to execute the Bash script
+                    automatically every minute.
+                    The crontab schedule uses five asterisks,
+                    meaning every minute of every hour and day.
+                </p>
+
+                <pre class="command"><code>* * * * *</code></pre>
+
+                <p>
+                    Each execution generates an updated JSON report.
+                    The website reads the latest data from that file.
+                    The cron configuration is stored in the user's
+                    crontab and persists across system reboots,
+                    provided the cron service is running.
+                </p>
+            </div>
+
+            <div class="qa">
+                <h3>4. A problem encountered</h3>
+
+                <p>
+                    While developing the Bash script using Visual Studio,
+                    the script produced error "command not found"
+                    for carriage return characters.
+                </p>
+
+                <p>
+                    The problem was caused by Windows line endings,
+                    while the Bash script expected Unix-style LF line endings.
+                </p>
+
+                <p>
+                    I solved the issue by removing the carriage return
+                    characters from the file using sed and changing the file's
+                    line ending format to Unix.
+                </p>
+
+                <pre class="command"><code>sed -i 's/\r$//' generate-system-status.sh</code></pre>
+            </div>
+
+
+            <div class="qa">
+                <h3>5. Github link</h3>
+                <div class="status-card">
+                    <span class="highlight-label">
+                        <a href="https://github.com/Visa-testhub/school-site/tree/main"
+                           target="_blank"
+                           rel="noopener noreferrer">
+                            Github link
+                        </a>
+                    </span>
+                </div>
+
+            </div>
+
+            <div class="qa">
+                <h3>6. Test results</h3>
+
+                <p>Bash syntax check: Passed.</p>
+
+                <p>Disk status function:</p>
+                <ul>
+                    <li>50% - OK (Passed)</li>
+                    <li>80% - WARNING (Passed)</li>
+                    <li>90% - WARNING (Passed)</li>
+                </ul>
+
+                <p>
+                    Automatic updates: Verified two consecutive
+                    updates with different generation times.
+                </p>
+
+                <p>
+                    Reboot: Verified that Nginx, the Week 2
+                    application and the cron schedule continued
+                    working after restarting the VM.
+                </p>
+            </div>
+        </section>
+
+
+    </main>
+
+    <script>
+        async function loadStatus() {
+            try {
+                const response = await fetch("./assets/status.json", {
+                    cache: "no-store"
+                });
+
+                if (!response.ok) {
+                    throw new Error("Unable to retrieve JSON");
+                }
+
+                const data = await response.json();
+
+                document.getElementById("generated").textContent =
+                    data.generated_at;
+
+                document.getElementById("uptime").textContent =
+                    data.uptime;
+
+                const diskUsage = String(data.disk_usage);
+
+                document.getElementById("disk").textContent =
+                    diskUsage.endsWith("%") ? diskUsage : diskUsage + "%";
+
+                const status = document.getElementById("status");
+
+                status.textContent = data.disk_status ?? "Not available";
+
+                status.classList.toggle(
+                    "warning",
+                    data.disk_status === "WARNING"
+                );
+
+                document.getElementById("mem_total").textContent =
+                    data.mem_total + " MiB";
+
+                document.getElementById("mem_available").textContent =
+                    data.mem_available + " MiB";
+
+            } catch (error) {
+                console.error("Status update failed:", error);
+            }
+        }
+
+        loadStatus();
+
+        // Refresh values every 60 seconds
+        setInterval(loadStatus, 60000);
+    </script>
+
+</body>
+</html>

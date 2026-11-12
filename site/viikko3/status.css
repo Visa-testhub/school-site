@@ -1,0 +1,61 @@
+/* Week 3 server report */
+
+.report-header {
+    margin-bottom: 32px;
+}
+
+    .report-header h1 {
+        font-size: 42px;
+        line-height: 1.2;
+        margin: 8px 0 12px;
+    }
+
+.report-description {
+    color: var(--muted);
+    margin: 0;
+}
+
+/* Server status cards */
+
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.status-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 24px;
+    background: linear-gradient(120deg, #192337, #0e1626);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    min-width: 0;
+}
+
+    .status-card strong {
+        font-size: 20px;
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+    }
+
+#status {
+    color: var(--cyan);
+}
+
+    #status.warning {
+        color: #ffb86c;
+    }
+
+/* Mobile layout */
+
+@media (max-width: 700px) {
+    .status-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .report-header h1 {
+        font-size: 30px;
+    }
+}
