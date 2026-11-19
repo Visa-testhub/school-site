@@ -1,0 +1,177 @@
+
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viikkotehtävä 4</title>
+    <link rel="stylesheet" href="./static/style.css">
+</head>
+<body>
+    <h1>Python-verkkosovellus - Replika</h1>
+
+    <h2>Kävijälaskuri (Read-only replica)</h2>
+    <p>Sivun latauskerrat: <strong>{{ visits }}</strong></p>
+    <p>
+        Laskurin arvo luetaan B palvelimen omasta MySQL tietokannasta,
+        johon A palvelimen muutokset replikoidaan automaattisesti.
+        Tämä sivu ainoastaan näyttää laskurin arvon eikä kasvata sitä.
+    </p>
+    <p>
+        <a href="http://195.148.21.169/viikko2/">
+            Alkuperäinen kävijälaskuri A palvelimella
+        </a>
+    </p>
+
+    <hr>
+
+    <h2>Viikko 4 - Dokumentaatio</h2>
+
+    <h3>Palvelimen kloonaus</h3>
+    <p>
+        Otin ensin cPoutassa snapshotin alkuperäisestä A palvelimesta
+        sen ollessa sammutettuna. Snapshotista loin uuden Ubuntu virtuaalikoneen,
+        jolle annoin nimen visavm-b ja oman IP-osoitteen.
+        Tarkistin SSH-yhteyden sekä Nginxin ja MySQL:n toiminnan.
+    </p>
+    <p>
+        Koska B oli kopio A:sta, myös MySQL tunnisteet olivat samoja.
+        Vaihdoin B:n server_id:n ja loin sille uuden server_uuid:n.
+        Pysäytin myös B:n vanhan viikko2-palvelun, ettei se kasvattaisi
+        laskuria itsenäisesti.
+    </p>
+
+    <h3>Levytila ja käyttäjät</h3>
+    <p>
+        Molemmilla palvelimilla on 80 GiB:n virtuaalilevy.
+        Juuriosio /dev/vda1 käyttää ext4-tiedostojärjestelmää.
+        Sivuston tiedostot ovat hakemistossa /var/www/school-site/
+        ja MySQL tiedostot hakemistossa /var/lib/mysql/.
+    </p>
+    <p>
+        B:n varmuuskopiot tallennetaan hakemistoon
+        /var/backups/school-site/, joka ei ole julkisen verkkosivuston
+        hakemistossa. Sen omistaa webbackup-käyttäjä ja oikeudet
+        on rajattu arvoon 700.
+    </p>
+    <p>
+        Ylläpidossa käytän ubuntu-käyttäjää ja verkkosivuston
+        tiedostoissa www-data-ryhmää. Varmuuskopiointia varten loin
+        A:lle backupread-käyttäjän ja B:lle webbackup-käyttäjän.
+        SSH-avain sallii yhteyden vain B:n sisäisestä IP-osoitteesta,
+        ja backupread pystyy lukemaan sivuston tiedostoja.
+    </p>
+
+    <h3>Tiedostojen varmuuskopiointi</h3>
+    <p>
+        Tein B palvelimelle Bash skriptin, joka hakee A:n sivustotiedostot
+        rsyncillä SSH-yhteyden kautta. Käytin pull-menetelmää,
+        eli B hakee tiedostot A:lta.
+    </p>
+    <p>
+        Skripti tekee jokaiselle varmuuskopiolle aikaleimatun hakemiston
+        ja kirjoittaa onnistumisen tai epäonnistumisen backup.log-tiedostoon.
+        Kopioinnista jätetään pois esimerkiksi .git, .venv ja
+        salaisuuksia sisältävät tiedostot.
+    </p>
+    <p>
+        Lisäsin webbackup-käyttäjän croniin ajastuksen
+        <code>0 * * * *</code>, eli varmuuskopiointi tehdään kerran
+        tunnissa. Cron käyttää myös flock-komentoa, jotta kaksi
+        varmuuskopiointia ei käynnisty päällekkäin.
+    </p>
+
+    <h3>Tietokannan replikointi</h3>
+    <p>
+        Käytin MySQL 8.4 omaa replikointia. A toimii alkuperäisenä
+        tietokantapalvelimena ja B sen lukukopiona.
+    </p>
+    <p>
+        Loin A:lle replicating-user tietokantakäyttäjän, jolla on vain
+        REPLICATION SLAVE oikeus. Avasin MySQL portin 3306
+        vain B:n sisäiselle IP osoitteelle.
+    </p>
+    <p>
+        Tein A:n viikko2_db tietokannasta mysqldumpilla alkukopion,
+        jonka siirsin B:lle. Tämän jälkeen käynnistin replikoinnin
+        dumpin mukana tallennetusta binäärilokin kohdasta.
+        Nyt laskurin muutokset siirtyvät automaattisesti A:lta B:lle.
+    </p>
+    <p>
+        B:n MySQL:ssä ovat käytössä read_only ja super_read_only.
+        Viikon 4 sovellus käyttää viikko4reader käyttäjää,
+        jolla on vain SELECT oikeus visitor_counter tauluun.
+    </p>
+    <p>
+        Replikointi ei korvaa varmuuskopiointia, koska myös
+        virheelliset muutokset ja poistot kopioituvat B:lle.
+        Sen vuoksi historiallisia varmuuskopioita tarvitaan erikseen.
+    </p>
+
+    <h3>Testaus</h3>
+    <ul>
+        <li>
+            Molempien palvelinten verkkosivut toimivat HTTP yhteydellä.
+        </li>
+        <li>
+            Palautin varmuuskopiosta index.html-tiedoston erilliseen
+            hakemistoon ja vertasin sitä alkuperäiseen SHA-256-tarkistussummalla.
+            Summat olivat samat.
+        </li>
+        <li>
+            B:n viikko4reader-käyttäjällä on vain SELECT-oikeus,
+            ja laskurin lukeminen onnistui.
+        </li>
+        <li>
+            Automaattiset varmuuskopiot onnistuivat tunnin välein:
+        </li>
+        <li>
+            Thu Nov 19 17:00:03 UTC 2026: SUCCESS /var/backups/school-site/2026-11-19_17-00-01
+        </li>
+        <li>
+            Thu Nov 19 18:00:03 UTC 2026: SUCCESS /var/backups/school-site/2026-11-19_18-00-01
+        </li>
+        <li>
+            Replikointi B:llä toimii normaalisti:
+        </li>
+        <li>
+            Replica_IO_Running: Yes
+        </li>
+        <li>
+            Replica_SQL_Running: Yes
+        </li>
+        <li>
+            Seconds_Behind_Source: 0
+        </li>
+        <li>
+            B palvelin näyttää A:n laskurin myös uudelleenkäynnistyksen jälkeen.
+        </li>
+    </ul>
+
+    <h3>Ongelma ja ratkaisu</h3>
+    <p>
+        Aluksi B:n SSH-kirjautuminen A:n backupread-käyttäjälle
+        ei onnistunut. Huomasin, että authorized_keys-tiedostossa
+        oli ylimääräinen välilyönti avaimen asetuksissa.
+        Korjasin rivin, minkä jälkeen yhteys ja rsync toimivat.
+    </p>
+
+    <h3>Linkit</h3>
+    <p>
+        <a href="http://195.148.21.169/viikko2/">
+            Palvelin A - Viikko 2
+        </a>
+    </p>
+    <p>
+        <a href="http://86.50.252.56/viikko4/">
+            Palvelin B - Viikko 4
+        </a>
+    </p>
+    <p>
+        <a href="https://github.com/Visa-testhub/school-site"
+           target="_blank" rel="noopener noreferrer">
+            GitHub - school-site
+        </a>
+    </p>
+</body>
+</html>
